@@ -6,15 +6,14 @@ import urllib2
 import random
 import sys
 import getopt
-import RPi.GPIO as GPIO
+import quick2wire.gpio as QGPIO
 
 # Set mode to use board numbering system
-GPIO.setmode(GPIO.BOARD)
 
 # Pi Pin Configs
-GREEN_PIN  = 15
-YELLOW_PIN = 13
-RED_PIN    = 11
+GREEN_PIN  = 3
+YELLOW_PIN = 2
+RED_PIN    = 0
 
 # Circle CI Config
 TOKEN = None
@@ -30,19 +29,16 @@ class BuildStatus:
   BAD     = 2
 
 class Light:
-  def __init__(self, pin):
-    self.pin = pin
-    GPIO.setup(pin, GPIO.OUT)
+  def __init__(self, pin_id):
+    self.pin = QGPIO.pins.pin(pin_id, direction=QGPIO.Out)
+    self.pin.open()
     self.switch_on()
 
   def switch_off(self):
-    GPIO.output(self.pin, GPIO.HIGH)
+    self.pin.value = 1
 
   def switch_on(self):
-    GPIO.output(self.pin, GPIO.LOW)
-
-  def cleanup():
-    self.switch_off()
+    self.pin.value = 0
 
 class TrafficLight:
   def __init__(self, green_light, yellow_light, red_light, initial_build_status=BuildStatus.UNKNOWN):
@@ -70,11 +66,6 @@ class TrafficLight:
 
   def all_lights(self):
     return [self.green_light, self.yellow_light, self.red_light]
-
-  def cleanup(self):
-   for light in self.all_lights():
-     light.cleanup() 
-   GPIO.cleanup()
 
   def switch_all_on(self):
     for light in self.all_lights():
@@ -133,7 +124,7 @@ def parse_options():
   TOKEN = argv.pop(0)
   USER = argv.pop(0)
   REPO_NAME = argv.pop(0)
-  print REPO_NAME
+  
   try:
     opts, args = getopt.getopt(argv[4:], "hb:n:", ["branch=", "interval="])
   except getopt.GetoptError:
