@@ -11,9 +11,9 @@ import quick2wire.gpio as QGPIO
 # Set mode to use board numbering system
 
 # Pi Pin Configs
-GREEN_PIN  = 3
+GREEN_PIN  = 0
 YELLOW_PIN = 2
-RED_PIN    = 0
+RED_PIN    = 3
 
 # Circle CI Config
 TOKEN = None
@@ -27,6 +27,7 @@ class BuildStatus:
   GOOD    = 0
   UNKNOWN = 1
   BAD     = 2
+  ERROR   = 3
 
 class Light:
   def __init__(self, pin_id):
@@ -61,8 +62,16 @@ class TrafficLight:
       self.green_light.switch_on()
     elif self.build_status == BuildStatus.BAD:
       self.red_light.switch_on()
-    else:
+    elif self.build_status == BuildStatus.UNKNOWN:
       self.yellow_light.switch_on()
+    else: # Assume Error
+      self.switch_all_off()
+      for i in range(0,3):
+        self.red_light.switch_on()
+        self.yellow_light.switch_on()
+        time.sleep(0.5)
+        self.switch_all_off()
+        time.sleep(0.5)
 
   def all_lights(self):
     return [self.green_light, self.yellow_light, self.red_light]
@@ -144,7 +153,10 @@ def run():
   cci = CircleCIChecker(TOKEN, USER, REPO_NAME, BRANCH)
   traffic_light = TrafficLight(Light(GREEN_PIN), Light(YELLOW_PIN), Light(RED_PIN))
   while True:
-    status = cci.get_build_status()
+    try:
+      status = cci.get_build_status()
+    except:
+      status = BuildStatus.ERROR
     traffic_light.set_build_status(status)
     time.sleep(INTERVAL)  
 
