@@ -146,7 +146,7 @@ def parse_options():
     elif opt in ('-b', '--branch'):
       BRANCH = arg
     elif opt in ('-n', '--interval'):
-      INTERVAL = arg
+      INTERVAL = int(arg)
 
 # Create a CI Checker & update every CHECK_INTERVAL
 def run():
